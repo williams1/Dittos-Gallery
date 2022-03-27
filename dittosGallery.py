@@ -300,16 +300,20 @@ def transform():
         outFile += str(index)
     outFile += '.txt'
 
-    for _ in range(numGen.get()):
-        entry = imposter.choosePokemon(typesForced, typesForbidden, dualTypeVar.get(), legend, mythical, allowMega.get(), shiny, alter , alterKeepMoves.get(), allowRank, rankVar, regionalVariants, ranks, types)
-        if entry == 0:
+    try:
+        for _ in range(numGen.get()):
+            entry = imposter.choosePokemon(typesForced, typesForbidden, dualTypeVar.get(), legend, mythical, allowMega.get(), shiny, alter , alterKeepMoves.get(), allowRank, rankVar, regionalVariants, ranks, types)
+            if entry == 0:
+                with open(outFile, 'a') as ofile:
+                    ofile.write('Ditto had trouble finding things that matched your parameters. You may need to expand the data files- see "Complete the pokedex" under the Help menu for more details.')
+                break
             with open(outFile, 'a') as ofile:
-                ofile.write('Ditto had trouble finding things that matched your parameters. You may need to expand the data files- see "Complete the pokedex" under the Help menu for more details.')
-            break
-        with open(outFile, 'a') as ofile:
-            ofile.write(entry)
+                ofile.write(entry)
 
-    tk.messagebox.showinfo(message=f'Ditto is done picking transformations and wrote them all to {outFile}.')
+        tk.messagebox.showinfo(message=f'Ditto is done picking transformations and wrote them all to {outFile}.')
+    except:
+        tk.messagebox.showerror(message='Ditto fainted after getting into a harden match with a Metapod!\n\nYou encountered a bug during generation. Please inform the developer of the settings and data files you were using when you got this message.')
+
     return 0
 
 tk.Button(mainWindow, text="Generate Pokemon!", command= transform).grid(row= mainWinRows-1, column= mainWinCols//2, columnspan= 2)

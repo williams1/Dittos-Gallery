@@ -238,7 +238,7 @@ def alterType(transform, forceTypes, forbidTypes, dualType, allTypes):
     #doesn't matter which type is picked if we get this far
     else:
         #--pokemon doesn't have a forced type
-        if transform['Type 1'] not in forceTypes and transform['Type 2'] not in forceTypes:
+        if len(forceTypes) > 0 and transform['Type 1'] not in forceTypes and transform['Type 2'] not in forceTypes:
             forceOnly = True
         if random.random() < 0.5:
             lose = transform['Type 1']
@@ -272,7 +272,6 @@ def chooseMoves(creature, rank, attributes, type1, type2, allTypes, lostType = N
     #if altertype, prep attacks table by gathering all known attacks of appropriate type
     if lostType:
         alterAttacks = attacks.drop( attacks.loc[(attacks.Type != type1)].index )
-
     #listOfMoves
     listOfMoves = creature.Moves
     listOfMoves = listOfMoves.split('/')
@@ -286,6 +285,7 @@ def chooseMoves(creature, rank, attributes, type1, type2, allTypes, lostType = N
 
     maxRankGrabbed = True
     remainingMaxRank = rank
+    REMOVEME_TEMP_PATCH = 0
     while numMoves > 0 and len(listOfMoves)>0:
         #check if move type is predetermined this round
         moveType = None
@@ -294,7 +294,7 @@ def chooseMoves(creature, rank, attributes, type1, type2, allTypes, lostType = N
                 moveType = type2
             else:
                 moveType = type1
-        elif lostType and (lostType in allTypes) and random.random() < probMonoToDualAlter:
+        elif lostType and (lostType not in allTypes) and random.random() < probMonoToDualAlter:
             moveType = type1
         
         #determine rank of move to learn next
@@ -320,6 +320,13 @@ def chooseMoves(creature, rank, attributes, type1, type2, allTypes, lostType = N
                 if foundOne:
                     listOfMoves.allow[temp] = False
                     alterAttacks.allow[selection['index']] = False
+                else:
+                    REMOVEME_TEMP_PATCH += 1
+                    if REMOVEME_TEMP_PATCH > 9:
+                        keepLostMoves = True
+                        probSwitchAlter = 0
+                        probMonoToDualAlter = 0
+                        movesKnown.insert(0,'\n!!!!WARNING!!!!\nYour decision to lose moves of lost type for Alter Types was ignored due to a lack of appropriate moves in the database.\nPlease expand the moveset in the database to more if you wish to use this feature.\n\n')
         else:
             selection, foundOne = pickMove(listOfMoves, rankChoice, moveType)
             if foundOne:
@@ -329,6 +336,13 @@ def chooseMoves(creature, rank, attributes, type1, type2, allTypes, lostType = N
                     if foundOne:
                         listOfMoves.allow[temp] = False
                         alterAttacks.allow[selection['index']] = False
+                    else:
+                        REMOVEME_TEMP_PATCH += 1
+                    if REMOVEME_TEMP_PATCH > 9:
+                        keepLostMoves = True
+                        probSwitchAlter = 0
+                        probMonoToDualAlter = 0
+                        movesKnown.insert(0,'\n!!!!WARNING!!!!\nYour decision to lose moves of lost type for Alter Types was ignored due to a lack of appropriate moves in the database.\nPlease expand the moveset in the database to more if you wish to use this feature.\n\n')
                 else:
                     listOfMoves.allow[selection['index']] = False
 
@@ -443,12 +457,11 @@ def choosePokemon(forceTypes, forbidTypes, dualType, legend, mythical, mega, shi
     skillsKnown = chooseSkills(transform, actualRank, attributes) #outputs string to be printed
     if alter:
         type1, type2, lostType =  alterType(transform, forceTypes, forbidTypes, dualType, allTypes)
-        if not alterMove:
-            movesKnown = chooseMoves(transform, actualRank, attributes, type1, type2, allTypes, lostType, alterMove)
+        movesKnown = chooseMoves(transform, actualRank, attributes, type1, type2, allTypes, lostType, alterMove)
     else:
         type1, type2 = transform['Type 1'], transform['Type 2']
         movesKnown = chooseMoves(transform, actualRank, attributes, transform['Type 1'], transform['Type 2'], allTypes)
-
+        
     #create entry for pokemon
     entry = writeEntry(transform, [type1, type2], actualRank, allRanks, abilityKnown, attributes, skillsKnown, movesKnown, shiny)
     return entry
@@ -492,6 +505,11 @@ def writeEntry(creature, types, rank, allRanks, ability, attributes, skills, mov
     #skills
     entry += 'Skills:\n\t'+ skills + '\n'
     #moves
+    '''
+    REMOVEME_TEMP_PATCH!!!!!!!!!!@@@@@@@@@@@@@@#$$$$$$$$$$$$%%%%%%%%%%%%%%%%%%%
+    '''
+    if type(moves[0]) == type(''):
+        entry += moves.pop(0)
     entry += 'Moves:\n\t'
     for attack in moves:
         entry += f'Name: {attack.Name}\tType: {attack.Type}\n\t\t'
